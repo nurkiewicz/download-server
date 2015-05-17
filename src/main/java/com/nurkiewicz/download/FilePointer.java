@@ -15,8 +15,9 @@ public interface FilePointer {
 
 	String getOriginalName();
 
-	HashCode getTag();
+	String getEtag();
 
 	Optional<MediaType> getMediaType();
 
+	boolean matchesEtag(String requestEtag);
 }

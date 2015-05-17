@@ -1,7 +1,6 @@
 package com.nurkiewicz.download;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
@@ -49,8 +48,8 @@ public class FileSystemPointer implements FilePointer {
 	}
 
 	@Override
-	public HashCode getTag() {
-		return tag;
+	public String getEtag() {
+		return "\"" + tag + "\"";
 	}
 
 	@Override
@@ -67,5 +66,10 @@ public class FileSystemPointer implements FilePointer {
 				.add("tag", tag)
 				.add("mediaType", mediaTypeOrNull)
 				.toString();
+	}
+
+	@Override
+	public boolean matchesEtag(String requestEtag) {
+		return getEtag().equals(requestEtag);
 	}
 }
