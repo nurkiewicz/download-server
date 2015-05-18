@@ -7,6 +7,7 @@ import com.google.common.io.Files;
 import com.google.common.net.MediaType;
 
 import java.io.*;
+import java.time.Instant;
 import java.util.Optional;
 
 public class FileSystemPointer implements FilePointer {
@@ -71,5 +72,15 @@ public class FileSystemPointer implements FilePointer {
 	@Override
 	public boolean matchesEtag(String requestEtag) {
 		return getEtag().equals(requestEtag);
+	}
+
+	@Override
+	public Instant getLastModified() {
+		return Instant.ofEpochMilli(target.lastModified());
+	}
+
+	@Override
+	public boolean modifiedAfter(Instant clientTime) {
+		return !clientTime.isBefore(getLastModified());
 	}
 }

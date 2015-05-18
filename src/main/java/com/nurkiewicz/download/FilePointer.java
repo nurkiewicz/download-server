@@ -5,6 +5,7 @@ import com.google.common.net.MediaType;
 
 import java.io.File;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Optional;
 
 public interface FilePointer {
@@ -20,4 +21,8 @@ public interface FilePointer {
 	Optional<MediaType> getMediaType();
 
 	boolean matchesEtag(String requestEtag);
+
+	Instant getLastModified();
+
+	boolean modifiedAfter(Instant isModifiedSince);
 }
