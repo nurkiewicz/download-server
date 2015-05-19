@@ -18,6 +18,7 @@ import static com.google.common.net.HttpHeaders.ETAG
 import static com.google.common.net.HttpHeaders.IF_MODIFIED_SINCE
 import static com.google.common.net.HttpHeaders.IF_NONE_MATCH
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -120,6 +121,29 @@ class DownloadControllerSpec extends Specification {
 							.header(IF_MODIFIED_SINCE, dateHeader))
 					.andExpect(
 							status().isOk())
+	}
+
+	def 'should return 200 OK on HEAD request, but without body'() {
+		expect:
+			mockMvc
+					.perform(
+						head('/download/' + FileExamples.TXT_FILE_UUID))
+					.andExpect(
+							status().isOk())
+					.andExpect(
+							content().bytes(new byte[0]))
+	}
+
+	def 'should return 304 on HEAD request if we have cached version'() {
+		expect:
+			mockMvc
+				.perform(
+					head('/download/' + FileExamples.TXT_FILE_UUID)
+							.header(IF_NONE_MATCH, FileExamples.TXT_FILE.getEtag()))
+				.andExpect(
+					status().isNotModified())
+				.andExpect(
+					header().string(ETAG, FileExamples.TXT_FILE.getEtag()))
 	}
 
 	private String toDateHeader(Instant lastModified) {
