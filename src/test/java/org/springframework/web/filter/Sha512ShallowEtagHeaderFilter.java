@@ -1,19 +1,13 @@
 package org.springframework.web.filter;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 
 public class Sha512ShallowEtagHeaderFilter extends ShallowEtagHeaderFilter {
 
 	@Override
-	protected String generateETagHeaderValue(InputStream bytes) {
-		try {
-			final String hash = DigestUtils.sha256Hex(bytes);
-			return "\"" + hash + "\"";
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	protected String generateETagHeaderValue(byte[] bytes) {
+		final HashCode hash = Hashing.sha512().hashBytes(bytes);
+		return "\"" + hash + "\"";
 	}
 }
