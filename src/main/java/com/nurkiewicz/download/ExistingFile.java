@@ -71,6 +71,7 @@ public class ExistingFile {
 		return ResponseEntity
 				.status(status)
 				.eTag(filePointer.getEtag())
+				.contentLength(filePointer.getSize())
 				.lastModified(filePointer.getLastModified().toEpochMilli())
 				.body(body);
 	}

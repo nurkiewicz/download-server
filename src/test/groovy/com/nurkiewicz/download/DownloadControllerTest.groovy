@@ -14,14 +14,10 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import static com.google.common.net.HttpHeaders.ETAG
-import static com.google.common.net.HttpHeaders.IF_MODIFIED_SINCE
-import static com.google.common.net.HttpHeaders.IF_NONE_MATCH
+import static com.google.common.net.HttpHeaders.*
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 @WebAppConfiguration
 @ContextConfiguration(classes = [MainApplication])
@@ -144,6 +140,17 @@ class DownloadControllerSpec extends Specification {
 					status().isNotModified())
 				.andExpect(
 					header().string(ETAG, FileExamples.TXT_FILE.getEtag()))
+	}
+
+	def 'should return Content-length header'() {
+		expect:
+			mockMvc
+					.perform(
+					head('/download/' + FileExamples.TXT_FILE_UUID))
+					.andExpect(
+					status().isOk())
+					.andExpect(
+					header().longValue(CONTENT_LENGTH, FileExamples.TXT_FILE.size))
 	}
 
 	private String toDateHeader(Instant lastModified) {
