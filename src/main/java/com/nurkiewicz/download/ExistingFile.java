@@ -6,6 +6,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.io.InputStream;
@@ -68,12 +69,22 @@ public class ExistingFile {
 	}
 
 	private ResponseEntity<Resource> response(FilePointer filePointer, HttpStatus status, Resource body) {
-		return ResponseEntity
+		final ResponseEntity.BodyBuilder responseBuilder = ResponseEntity
 				.status(status)
 				.eTag(filePointer.getEtag())
 				.contentLength(filePointer.getSize())
-				.lastModified(filePointer.getLastModified().toEpochMilli())
-				.body(body);
+				.lastModified(filePointer.getLastModified().toEpochMilli());
+		filePointer
+				.getMediaType()
+				.map(this::toMediaType)
+				.ifPresent(responseBuilder::contentType);
+		return responseBuilder.body(body);
+	}
+
+	private MediaType toMediaType(com.google.common.net.MediaType input) {
+		return input.charset()
+				.transform(c -> new MediaType(input.type(), input.subtype(), c))
+				.or(new MediaType(input.type(), input.subtype()));
 	}
 
 }

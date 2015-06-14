@@ -1,9 +1,7 @@
 package com.nurkiewicz.download;
 
-import com.google.common.hash.HashCode;
 import com.google.common.net.MediaType;
 
-import java.io.File;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;

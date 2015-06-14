@@ -153,6 +153,17 @@ class DownloadControllerSpec extends Specification {
 					header().longValue(CONTENT_LENGTH, FileExamples.TXT_FILE.size))
 	}
 
+	def 'should return content type in response'() {
+		expect:
+			mockMvc
+					.perform(
+					head('/download/' + FileExamples.TXT_FILE_UUID))
+					.andExpect(
+					status().isOk())
+					.andExpect(
+					header().string(CONTENT_TYPE, "text/plain"))
+	}
+
 	private String toDateHeader(Instant lastModified) {
 		ZonedDateTime dateTime = ZonedDateTime.ofInstant(lastModified, ZoneOffset.UTC)
 		DateTimeFormatter.RFC_1123_DATE_TIME.format(dateTime)
