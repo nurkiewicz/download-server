@@ -1,5 +1,6 @@
 package com.nurkiewicz.download;
 
+import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
@@ -10,12 +11,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.io.InputStream;
-import java.time.Instant;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
-import static org.springframework.http.HttpStatus.NOT_MODIFIED;
-import static org.springframework.http.HttpStatus.OK;
+import static org.apache.commons.io.FileUtils.ONE_MB;
+import static org.springframework.http.HttpStatus.*;
 
 public class ExistingFile {
 
@@ -23,26 +26,47 @@ public class ExistingFile {
 
 	private final HttpMethod method;
 	private final FilePointer filePointer;
+	private final UUID uuid;
 
-	public ExistingFile(HttpMethod method, FilePointer filePointer) {
+	public ExistingFile(HttpMethod method, FilePointer filePointer, UUID uuid) {
 		this.method = method;
 		this.filePointer = filePointer;
+		this.uuid = uuid;
+	}
+
+	public ResponseEntity<Resource> redirect(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
+		if (cached(requestEtagOpt, ifModifiedSinceOpt))
+			return notModified(filePointer);
+		return redirectDownload(filePointer);
 	}
 
 	public ResponseEntity<Resource> handle(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
-		if (requestEtagOpt.isPresent()) {
-			final String requestEtag = requestEtagOpt.get();
-			if (filePointer.matchesEtag(requestEtag)) {
-				return notModified(filePointer);
-			}
-		}
-		if (ifModifiedSinceOpt.isPresent()) {
-			final Instant isModifiedSince = ifModifiedSinceOpt.get().toInstant();
-			if (filePointer.modifiedAfter(isModifiedSince)) {
-				return notModified(filePointer);
-			}
-		}
+		if (cached(requestEtagOpt, ifModifiedSinceOpt))
+			return notModified(filePointer);
 		return serveDownload(filePointer);
+	}
+
+	private boolean cached(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
+		final boolean matchingEtag = requestEtagOpt
+				.map(filePointer::matchesEtag)
+				.orElse(false);
+		final boolean notModifiedSince = ifModifiedSinceOpt
+				.map(Date::toInstant)
+				.map(filePointer::modifiedAfter)
+				.orElse(false);
+		return matchingEtag || notModifiedSince;
+	}
+
+	private ResponseEntity<Resource> redirectDownload(FilePointer filePointer) {
+		try {
+			log.trace("Redirecting {} '{}'", method, filePointer);
+			return ResponseEntity
+					.status(MOVED_PERMANENTLY)
+					.location(new URI("/download/" + uuid + "/" + filePointer.getOriginalName()))
+					.body(null);
+		} catch (URISyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	private ResponseEntity<Resource> serveDownload(FilePointer filePointer) {
@@ -60,7 +84,9 @@ public class ExistingFile {
 
 	private InputStreamResource buildResource(FilePointer filePointer) {
 		final InputStream inputStream = filePointer.open();
-		return new InputStreamResource(inputStream);
+		final RateLimiter throttler = RateLimiter.create(ONE_MB);
+		final ThrottlingInputStream throttlingInputStream = new ThrottlingInputStream(inputStream, throttler);
+		return new InputStreamResource(throttlingInputStream);
 	}
 
 	private ResponseEntity<Resource> notModified(FilePointer filePointer) {

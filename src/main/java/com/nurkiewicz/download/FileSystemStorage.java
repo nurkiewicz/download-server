@@ -10,6 +10,10 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Stub implementation that for any UUID returns `logback.xml` file.
+ * Replace with real implementation.
+ */
 @Component
 @Profile("!test")
 public class FileSystemStorage implements FileStorage {

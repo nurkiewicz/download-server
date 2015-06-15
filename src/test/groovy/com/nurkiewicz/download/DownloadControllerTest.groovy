@@ -26,6 +26,8 @@ class DownloadControllerSpec extends Specification {
 
 	private MockMvc mockMvc
 
+	private static final String TEXT_FILE = '/download/' + FileExamples.TXT_FILE_UUID + '/file.txt';
+
 	@Autowired
 	public void setWebApplicationContext(WebApplicationContext wac) {
 		mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
@@ -34,7 +36,8 @@ class DownloadControllerSpec extends Specification {
 	def 'should return bytes of existing file'() {
 		expect:
 			mockMvc
-					.perform(get('/download/' + FileExamples.TXT_FILE_UUID))
+					.perform(
+						get(TEXT_FILE))
 					.andExpect(status().isOk())
 					.andExpect(content().string("foobar"))
 	}
@@ -42,7 +45,8 @@ class DownloadControllerSpec extends Specification {
 	def 'should return 404 and no content'() {
 		expect:
 			mockMvc
-					.perform(get('/download/' + FileExamples.NOT_FOUND_UUID))
+					.perform(
+						get('/download/' + FileExamples.NOT_FOUND_UUID + "/file.txt"))
 					.andExpect(status().isNotFound())
 					.andExpect(content().bytes(new byte[0]))
 	}
@@ -51,7 +55,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-						get('/download/' + FileExamples.TXT_FILE_UUID))
+						get(TEXT_FILE))
 					.andExpect(
 						status().isOk())
 		}
@@ -60,7 +64,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-						get('/download/' + FileExamples.TXT_FILE_UUID)
+						get(TEXT_FILE)
 								.header(IF_NONE_MATCH, '"WHATEVER"'))
 					.andExpect(
 						status().isOk())
@@ -72,7 +76,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-						get('/download/' + FileExamples.TXT_FILE_UUID)
+						get(TEXT_FILE)
 								.header(IF_NONE_MATCH, etag))
 					.andExpect(
 						status().isNotModified())
@@ -87,7 +91,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-					get('/download/' + FileExamples.TXT_FILE_UUID)
+					get(TEXT_FILE)
 							.header(IF_MODIFIED_SINCE, dateHeader))
 					.andExpect(
 							status().isNotModified())
@@ -100,7 +104,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-					get('/download/' + FileExamples.TXT_FILE_UUID)
+					get(TEXT_FILE)
 							.header(IF_MODIFIED_SINCE, dateHeader))
 					.andExpect(
 							status().isNotModified())
@@ -113,7 +117,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-					get('/download/' + FileExamples.TXT_FILE_UUID)
+					get(TEXT_FILE)
 							.header(IF_MODIFIED_SINCE, dateHeader))
 					.andExpect(
 							status().isOk())
@@ -123,7 +127,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-						head('/download/' + FileExamples.TXT_FILE_UUID))
+						head(TEXT_FILE))
 					.andExpect(
 							status().isOk())
 					.andExpect(
@@ -134,7 +138,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 				.perform(
-					head('/download/' + FileExamples.TXT_FILE_UUID)
+					head(TEXT_FILE)
 							.header(IF_NONE_MATCH, FileExamples.TXT_FILE.getEtag()))
 				.andExpect(
 					status().isNotModified())
@@ -146,7 +150,7 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-					head('/download/' + FileExamples.TXT_FILE_UUID))
+					head(TEXT_FILE))
 					.andExpect(
 					status().isOk())
 					.andExpect(
@@ -157,14 +161,14 @@ class DownloadControllerSpec extends Specification {
 		expect:
 			mockMvc
 					.perform(
-					head('/download/' + FileExamples.TXT_FILE_UUID))
+					head(TEXT_FILE))
 					.andExpect(
 					status().isOk())
 					.andExpect(
 					header().string(CONTENT_TYPE, "text/plain"))
 	}
 
-	private String toDateHeader(Instant lastModified) {
+	private static String toDateHeader(Instant lastModified) {
 		ZonedDateTime dateTime = ZonedDateTime.ofInstant(lastModified, ZoneOffset.UTC)
 		DateTimeFormatter.RFC_1123_DATE_TIME.format(dateTime)
 	}
