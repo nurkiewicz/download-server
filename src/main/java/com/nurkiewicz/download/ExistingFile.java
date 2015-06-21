@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.apache.commons.io.FileUtils.ONE_MB;
 import static org.springframework.http.HttpStatus.*;
@@ -35,15 +36,19 @@ public class ExistingFile {
 	}
 
 	public ResponseEntity<Resource> redirect(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
-		if (cached(requestEtagOpt, ifModifiedSinceOpt))
-			return notModified(filePointer);
-		return redirectDownload(filePointer);
+		return serveWithCaching(requestEtagOpt, ifModifiedSinceOpt, this::redirectDownload);
 	}
 
 	public ResponseEntity<Resource> handle(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
+		return serveWithCaching(requestEtagOpt, ifModifiedSinceOpt, this::serveDownload);
+	}
+
+	private ResponseEntity<Resource> serveWithCaching(
+			Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt,
+			Function<FilePointer, ResponseEntity<Resource>> notCachedResponse) {
 		if (cached(requestEtagOpt, ifModifiedSinceOpt))
 			return notModified(filePointer);
-		return serveDownload(filePointer);
+		return notCachedResponse.apply(filePointer);
 	}
 
 	private boolean cached(Optional<String> requestEtagOpt, Optional<Date> ifModifiedSinceOpt) {
